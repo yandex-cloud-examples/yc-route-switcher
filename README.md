@@ -307,6 +307,6 @@ terraform apply
 
 Вы можете познакомиться с двумя примерами использования модуля route-switcher:
 
-1. [Решение по развертыванию защищенной высокодоступной сетевой инфраструктуры с выделением DMZ на основе Next-Generation Firewall](https://github.com/yandex-cloud/yc-architect-solution-library/tree/main/demos/dmz-fw-ha)
+1. [Решение по развертыванию защищенной высокодоступной сетевой инфраструктуры с выделением DMZ на основе Next-Generation Firewall](https://github.com/yandex-cloud-examples/yc-dmz-with-high-available-ngfw/)
 
 2. [Решение по обеспечению отказоустойчивости NAT-инстанс](examples/README.md)

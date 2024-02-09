@@ -12,7 +12,7 @@
 
 Для организации доступа в интернет виртуальных машин и других облачных ресурсов, размещенных в Yandex Cloud, может использоваться [NAT-инстанс](https://cloud.yandex.ru/marketplace/products/yc/nat-instance-ubuntu-18-04-lts). С помощью [статической маршрутизации](https://cloud.yandex.ru/docs/vpc/concepts/static-routes) трафик из подсетей направляется в интернет через NAT-инстанс.
 
-Для обеспечения высокой доступности можно развернуть несколько NAT-инстансов, размещенных в разных зонах доступности. [Модуль route-switcher](https://github.com/yandex-cloud/yc-architect-solution-library/tree/main/yc-route-switcher-v2) позволяет переключить исходящий в интернет трафик из подсетей при отказе одного из NAT-инстанс на резервный.
+Для обеспечения высокой доступности можно развернуть несколько NAT-инстансов, размещенных в разных зонах доступности. [Модуль route-switcher](https://github.com/yandex-cloud-examples/yc-route-switcher/) позволяет переключить исходящий в интернет трафик из подсетей при отказе одного из NAT-инстанс на резервный.
 
 В примере на схеме NAT-инстанс NAT-A является основным для исходящего в интернет трафика, а NAT-B резервным.
 
@@ -36,7 +36,7 @@
 | public ip a, public ip b | Публичные IP-адреса NAT-инстансов |
 | NLB | Внутренний сетевой балансировщик для работы модуля route-switcher, осуществляет проверку доступности NAT-инстансов с помощью проверок состояния на порт TCP 22 |
 
-Подробнее о возможностях и принципах работы модуля route-switcher смотрите в [документации к модулю](https://github.com/yandex-cloud/yc-architect-solution-library/tree/main/yc-route-switcher-v2).
+Подробнее о возможностях и принципах работы модуля route-switcher смотрите в [документации к модулю](https://github.com/yandex-cloud-examples/yc-route-switcher/).
 
 ## Подготовка к развертыванию
 
@@ -82,10 +82,10 @@
 
 ## Порядок развертывания
 
-1. На вашей рабочей станции склонируйте репозиторий `yandex-cloud/yc-architect-solution-library` из GitHub и перейдите в папку `examples` сценария `yc-route-switcher-v2`:
+1. На вашей рабочей станции склонируйте репозиторий `yandex-cloud-examples/yc-route-switcher` из GitHub и перейдите в папку `examples` сценария `yc-route-switcher`:
     ```bash
-    git clone https://github.com/yandex-cloud/yc-architect-solution-library.git
-    cd yc-architect-solution-library/yc-route-switcher-v2/examples
+    git clone https://github.com/yandex-cloud-examples/yc-route-switcher.git
+    cd yc-route-switcher/examples
     ```
 
 2. Настройте окружение для развертывания ([подробности](https://cloud.yandex.ru/docs/tutorials/infrastructure-management/terraform-quickstart#get-credentials)):
