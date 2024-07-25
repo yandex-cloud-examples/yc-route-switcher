@@ -19,6 +19,7 @@ resource "yandex_function" "route-switcher" {
     BUCKET_NAME           = yandex_storage_bucket.route_switcher_bucket.id
     CONFIG_PATH           = "route-switcher-config.yaml"
     CRON_INTERVAL         = var.cron_interval
+    ROUTER_HCHK_INTERVAL  = var.router_healthcheck_interval
     BACK_TO_PRIMARY       = var.back_to_primary
   }
   user_hash = data.archive_file.route_switcher_function.output_base64sha256

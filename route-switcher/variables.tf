@@ -50,11 +50,17 @@ variable "routers" {
 variable "route_switcher_sa_roles" {
   description = "Roles that are needed for route-switcher service account"
   type        = list(string)
-  default = ["load-balancer.privateAdmin", "storage.editor", "serverless.functions.invoker", "storage.uploader"]
+  default = ["load-balancer.privateAdmin", "serverless.functions.invoker", "storage.editor"]
 }
 
 variable "cron_interval" {
-  description = "Retrying interval in seconds used in function logs for failed requests. Should be equal cron interval for function."
+  description = "Interval in minutes for launching route-switcher function. If changing default value manually change cron_expression value in route_switcher_trigger accordingly to specified interval."
+  type = number
+  default = 1
+}
+
+variable "router_healthcheck_interval" {
+  description = "Interval in seconds for checking routers status using NLB healthcheck. Changing interval to value lower than 10 sec is not recommended. If changing default values additional test is recommended for failure scenarios."
   type = number
   default = 60
 }

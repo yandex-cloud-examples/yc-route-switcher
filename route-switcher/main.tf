@@ -35,8 +35,8 @@ resource "yandex_lb_network_load_balancer" "route_switcher_lb" {
 
     healthcheck {
       name = "tcp"
-      timeout = 2
-      interval = 3
+      timeout = 1
+      interval = 2
       unhealthy_threshold = 3
       healthy_threshold = 3
       tcp_options {

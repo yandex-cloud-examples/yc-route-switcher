@@ -6,6 +6,7 @@ module "route_switcher" {
   route_table_list      = [yandex_vpc_route_table.nat_instance_rt.id]
   router_healthcheck_port = 22
   back_to_primary = true
+  router_healthcheck_interval = 60
   routers = [
     {
       # nat-a
