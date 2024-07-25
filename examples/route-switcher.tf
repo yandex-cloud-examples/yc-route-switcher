@@ -1,5 +1,5 @@
 module "route_switcher" {
-  source    = "../route-switcher/"
+  source    = "../"
   start_module          = false
   folder_id = var.folder_id
   route_table_folder_list = [var.folder_id]
