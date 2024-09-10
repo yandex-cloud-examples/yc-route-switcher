@@ -65,10 +65,24 @@ resource "yandex_resourcemanager_folder_iam_member" "route_switcher_sa_roles" {
   member = "serviceAccount:${yandex_iam_service_account.route_switcher_sa.id}"
 }
 
-resource "yandex_resourcemanager_folder_iam_member" "route_switcher_vpc_sa_roles" {
+resource "yandex_resourcemanager_folder_iam_member" "route_switcher_vpc_private_sa_roles" {
   count     = length(var.route_table_folder_list)
   folder_id = var.route_table_folder_list[count.index]
   role   = "vpc.privateAdmin"
+  member = "serviceAccount:${yandex_iam_service_account.route_switcher_sa.id}"
+}
+
+resource "yandex_resourcemanager_folder_iam_member" "route_switcher_vpc_gw_sa_roles" {
+  count     = length(var.route_table_folder_list)
+  folder_id = var.route_table_folder_list[count.index]
+  role   = "vpc.gateways.user"
+  member = "serviceAccount:${yandex_iam_service_account.route_switcher_sa.id}"
+}
+
+resource "yandex_resourcemanager_folder_iam_member" "route_switcher_vpc_public_sa_roles" {
+  count     = length(var.route_table_folder_list)
+  folder_id = var.route_table_folder_list[count.index]
+  role   = "vpc.publicAdmin"
   member = "serviceAccount:${yandex_iam_service_account.route_switcher_sa.id}"
 }
 
@@ -80,6 +94,7 @@ resource "yandex_storage_bucket" "route_switcher_bucket" {
 }
 
 resource "yandex_storage_object" "route_switcher_config" {
+  count = var.start_module ? 1 : 0
   bucket     = yandex_storage_bucket.route_switcher_bucket.id
   access_key = yandex_iam_service_account_static_access_key.route_switcher_sa_s3_keys.access_key
   secret_key = yandex_iam_service_account_static_access_key.route_switcher_sa_s3_keys.secret_key

@@ -177,20 +177,21 @@ def get_config_route_tables_and_routers():
             routeTable_prefixes = set()
             for ip_route in routeTable: 
                 # checking if next hop is one of a router addresses
-                if ip_route['nextHopAddress'] in nexthops:
-                    # populate routeTable_prefixes set with route table prefixes
-                    routeTable_prefixes.add(ip_route['destinationPrefix'])
-          
-                    if 'routes' in config_route_table:
-                        if ip_route['destinationPrefix'] not in config_route_table['routes']:
+                if 'nextHopAddress' in ip_route:
+                    if ip_route['nextHopAddress'] in nexthops:
+                        # populate routeTable_prefixes set with route table prefixes
+                        routeTable_prefixes.add(ip_route['destinationPrefix'])
+                    
+                        if 'routes' in config_route_table:
+                            if ip_route['destinationPrefix'] not in config_route_table['routes']:
+                                # insert route in config file stored in bucket
+                                config_route_table['routes'].update({ip_route['destinationPrefix']:ip_route['nextHopAddress']}) 
+                                config_changed = True
+                        else:
                             # insert route in config file stored in bucket
+                            config_route_table['routes'] = {}
                             config_route_table['routes'].update({ip_route['destinationPrefix']:ip_route['nextHopAddress']}) 
                             config_changed = True
-                    else:
-                        # insert route in config file stored in bucket
-                        config_route_table['routes'] = {}
-                        config_route_table['routes'].update({ip_route['destinationPrefix']:ip_route['nextHopAddress']}) 
-                        config_changed = True
                 
             if 'routes' in config_route_table:
                 if len(set(config_route_table['routes'].keys())) != len(routeTable_prefixes):
@@ -340,33 +341,34 @@ def handler(event, context):
             routeTable_prefixes = set()
             for ip_route in routeTable: 
                 # checking if next hop is one of a router addresses
-                if ip_route['nextHopAddress'] in healthy_nexthops or ip_route['nextHopAddress'] in unhealthy_nexthops:
-                    # populate routeTable_prefixes set with route table prefixes
-                    routeTable_prefixes.add(ip_route['destinationPrefix'])
-                    if ip_route['nextHopAddress'] in unhealthy_nexthops:
-                        # if primary router is not healthy change next hop address to backup router  
-                        backup_router = unhealthy_nexthops[ip_route['nextHopAddress']]
-                        # also check whether backup router address is in healthy next hops
-                        if backup_router in healthy_nexthops:
-                            if router_with_changed_status != routers[ip_route['nextHopAddress']]:
-                                router_with_changed_status = routers[ip_route['nextHopAddress']]
-                                print(f"Router {router_with_changed_status} is UNHEALTHY.")                     
-                            ip_route.update({'nextHopAddress':backup_router})
-                            routeTable_changes = {'modified':True, 'next_hop':backup_router}
+                if 'nextHopAddress' in ip_route:
+                    if ip_route['nextHopAddress'] in healthy_nexthops or ip_route['nextHopAddress'] in unhealthy_nexthops:
+                        # populate routeTable_prefixes set with route table prefixes
+                        routeTable_prefixes.add(ip_route['destinationPrefix'])
+                        if ip_route['nextHopAddress'] in unhealthy_nexthops:
+                            # if primary router is not healthy change next hop address to backup router  
+                            backup_router = unhealthy_nexthops[ip_route['nextHopAddress']]
+                            # also check whether backup router address is in healthy next hops
+                            if backup_router in healthy_nexthops:
+                                if router_with_changed_status != routers[ip_route['nextHopAddress']]:
+                                    router_with_changed_status = routers[ip_route['nextHopAddress']]
+                                    print(f"Router {router_with_changed_status} is UNHEALTHY.")                     
+                                ip_route.update({'nextHopAddress':backup_router})
+                                routeTable_changes = {'modified':True, 'next_hop':backup_router}
+                            else:
+                                print(f"Backup next hop {backup_router} is not healthy. Can not switch next hop {ip_route['nextHopAddress']} for route {ip_route['destinationPrefix']} in route table {config_route_table['route_table_id']}. Retrying in {cron_interval} minutes...")
                         else:
-                            print(f"Backup next hop {backup_router} is not healthy. Can not switch next hop {ip_route['nextHopAddress']} for route {ip_route['destinationPrefix']} in route table {config_route_table['route_table_id']}. Retrying in {cron_interval} minutes...")
-                    else:
-                        # if route-switcher module has 'back_to_primary' input variable set as 'true' we back to primary router after its recovery
-                        if back_to_primary == 'true':
-                            # get primary router from config stored in bucket
-                            primary_router = config_route_table['routes'][ip_route['destinationPrefix']]
-                            if primary_router in healthy_nexthops and ip_route['nextHopAddress'] != primary_router: 
-                                # if primary router became healthy and backup router is still used as next hop, change next hop address to primary router                     
-                                if router_with_changed_status != routers[primary_router]:
-                                    router_with_changed_status = routers[primary_router]
-                                    print(f"Router {router_with_changed_status} became HEALTHY.")
-                                ip_route.update({'nextHopAddress':primary_router})
-                                routeTable_changes = {'modified':True, 'next_hop':primary_router}
+                            # if route-switcher module has 'back_to_primary' input variable set as 'true' we back to primary router after its recovery
+                            if back_to_primary == 'true':
+                                # get primary router from config stored in bucket
+                                primary_router = config_route_table['routes'][ip_route['destinationPrefix']]
+                                if primary_router in healthy_nexthops and ip_route['nextHopAddress'] != primary_router: 
+                                    # if primary router became healthy and backup router is still used as next hop, change next hop address to primary router                     
+                                    if router_with_changed_status != routers[primary_router]:
+                                        router_with_changed_status = routers[primary_router]
+                                        print(f"Router {router_with_changed_status} became HEALTHY.")
+                                    ip_route.update({'nextHopAddress':primary_router})
+                                    routeTable_changes = {'modified':True, 'next_hop':primary_router}
                                
             if routeTable_changes['modified']:
                 # if next hop for some routes was changed add this table to all_modified_routeTables list
