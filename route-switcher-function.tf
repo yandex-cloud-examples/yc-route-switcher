@@ -1,3 +1,7 @@
+data "yandex_resourcemanager_folder" "folder" {
+  folder_id = var.folder_id
+}
+
 data "archive_file" "route_switcher_function" {
   type        = "zip"
   source_dir  = "${path.module}/route-switcher-function/"
@@ -21,6 +25,8 @@ resource "yandex_function" "route-switcher" {
     CRON_INTERVAL         = var.cron_interval
     ROUTER_HCHK_INTERVAL  = var.router_healthcheck_interval
     BACK_TO_PRIMARY       = var.back_to_primary
+    FOLDER_NAME           = data.yandex_resourcemanager_folder.folder.name
+    FUNCTION_NAME         = "route-switcher-${random_string.prefix.result}"
   }
   user_hash = data.archive_file.route_switcher_function.output_base64sha256
   content {
