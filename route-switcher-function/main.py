@@ -20,6 +20,7 @@ router_healthcheck_interval = int(os.getenv('ROUTER_HCHK_INTERVAL'))
 if router_healthcheck_interval < 10:
     router_healthcheck_interval = 10
 folder_name = os.getenv('FOLDER_NAME')
+folder_id = os.getenv('FOLDER_ID')
 function_name = os.getenv('FUNCTION_NAME')
 
 def get_config(endpoint_url='https://storage.yandexcloud.net'):
@@ -44,6 +45,52 @@ def get_config(endpoint_url='https://storage.yandexcloud.net'):
     
     return config
 
+def get_headers():
+    return {'Authorization': 'Bearer %s'  % iam_token}
+
+def get_load_balancer_type(config):
+    if 'loadBalancerType' in config:
+        return config['loadBalancerType']
+    return 'nlb'
+
+
+def get_load_balancer(config):
+    if get_load_balancer_type(config) == "alb":
+        return requests.get("https://alb.api.cloud.yandex.net/apploadbalancer/v1/loadBalancers/%s/targetStates/%s/%s" % (config['loadBalancerId'], config['backendGroupId'], config['targetGroupId']), headers=get_headers())
+    else:
+        return requests.get("https://load-balancer.api.cloud.yandex.net/load-balancer/v1/networkLoadBalancers/%s:getTargetStates?targetGroupId=%s" % (config['loadBalancerId'], config['targetGroupId']), headers=get_headers()) 
+    
+
+def get_target_statuses(config):
+    try:    
+        r = get_load_balancer(config)
+    except Exception as e:
+        print(f"Request to get target states in load balancer {config['loadBalancerId']} failed due to: {e}. Retrying in {cron_interval} minutes...")
+        return 
+    
+    data = r.json()
+
+    if r.status_code != 200:
+        print(f"Unexpected status code {r.status_code} for getting target states in load balancer {config['loadBalancerId']}. More details: {data.get('message')}. Retrying in {cron_interval} minutes...")
+        return 
+
+    targetStatuses = {}
+    for target in data['targetStates']:
+        if get_load_balancer_type(config) == "alb":
+            subnet = requests.get("https://vpc.api.cloud.yandex.net/vpc/v1/subnets/%s" % (target['target']['subnetId']), headers=get_headers()).json()
+            zoneId = subnet["zoneId"]
+
+            zoneStatus = 'UNHEALTHY'
+            for status in target['status']['zoneStatuses']:
+                if zoneId == status['zoneId']:
+                    zoneStatus = status['status']
+
+            targetStatuses[target['target']['ipAddress']] = zoneStatus
+        else:
+            targetStatuses[target['address']] = target['status']
+
+    return targetStatuses
+
 def get_router_status(config):
     '''
     get routers status from NLB 
@@ -51,37 +98,25 @@ def get_router_status(config):
     :return: dictionary (targetStatus) with healthchecked IP address of routers and its state
     '''
 
-    targetStatus = {}
+    targets = get_target_statuses(config)
 
-    # get router status from NLB
-    try:    
-        r = requests.get("https://load-balancer.api.cloud.yandex.net/load-balancer/v1/networkLoadBalancers/%s:getTargetStates?targetGroupId=%s" % (config['loadBalancerId'], config['targetGroupId']), headers={'Authorization': 'Bearer %s'  % iam_token})
-    except Exception as e:
-        print(f"Request to get target states in load balancer {config['loadBalancerId']} failed due to: {e}. Retrying in {cron_interval} minutes...")
-        return 
-    
-    if r.status_code != 200:
-        print(f"Unexpected status code {r.status_code} for getting target states in load balancer {config['loadBalancerId']}. More details: {r.json().get('message')}. Retrying in {cron_interval} minutes...")
-        return 
+    if not targets:
+        return
 
-    if 'targetStates' in r.json():
-        if len(r.json()['targetStates']) < 2:
-            # check whether we have at least two routers configured, if not return and generate an error
-            print(f"At least two routers should be in load balancer {config['loadBalancerId']}. Please add one more router. Retrying in {cron_interval} minute...")
-            return 
-        else:
-            # prepare targetStatus dictionary (targetStatus) with {key:value}, where key - healthchecked IP address of router, value - HEALTHY or other state
-            for target in r.json()['targetStates']:
-                targetStatus[target['address']] = target['status']
-            if 'HEALTHY' not in targetStatus.values():
-                # all routers are not healthy, exit from function 
-                print(f"All routers are not healthy. Can not switch next hops for route tables. Retrying in {cron_interval} minutes...")
-                return
-            return targetStatus 
-    else:
+    if len(targets.items()) == 0:
         print(f"There are no target endpoints in load balancer {config['loadBalancerId']}. Please add two endpoints. Retrying in {cron_interval} minutes...")
-        return    
+        return
 
+    if len(targets.items()) < 2:
+        print(f"At least two routers should be in load balancer {config['loadBalancerId']}. Please add one more router. Retrying in {cron_interval} minute...")
+        return
+
+    if 'HEALTHY' not in targets.values():
+        # all routers are not healthy, exit from function
+        print(f"All routers are not healthy. Can not switch next hops for route tables. Retrying in {cron_interval} minutes...")
+        return
+
+    return targets
 
 def get_config_route_tables_and_routers():
     '''
@@ -115,7 +150,7 @@ def get_config_route_tables_and_routers():
         print(f"There are no route tables in config file in bucket. Please add at least one route table. Retrying in {cron_interval} minutes...")
         return
     
-    # get routers status from NLB 
+    # get routers status from load balancer
     routerStatus = get_router_status(config)
     if routerStatus is None:
         # exit from function as some errors happened when checking router status
@@ -164,7 +199,7 @@ def get_config_route_tables_and_routers():
     route_table_error = False
     for config_route_table in config['route_tables']:
         try:    
-            r = requests.get("https://vpc.api.cloud.yandex.net/vpc/v1/routeTables/%s" % config_route_table['route_table_id'], headers={'Authorization': 'Bearer %s'  % iam_token})
+            r = requests.get("https://vpc.api.cloud.yandex.net/vpc/v1/routeTables/%s" % config_route_table['route_table_id'], headers=get_headers())
         except Exception as e:
             print(f"Request to get route table {config_route_table['route_table_id']} failed due to: {e}. Retrying in {cron_interval} minutes...")
             route_table_error = True
@@ -259,7 +294,7 @@ def write_metrics(metrics):
     :return:
     '''
     try:
-        r = requests.post('https://monitoring.api.cloud.yandex.net/monitoring/v2/data/write?folderId=%s&service=custom' % folder_id,  json={"metrics": metrics}, headers={'Authorization': 'Bearer %s'  % iam_token})
+        r = requests.post('https://monitoring.api.cloud.yandex.net/monitoring/v2/data/write?folderId=%s&service=custom' % folder_id,  json={"metrics": metrics}, headers=get_headers())
     except Exception as e:
         print(f"Request to write metrics failed due to: {e}. Retrying in {cron_interval} minutes...")
 
@@ -278,7 +313,7 @@ def failover(route_table):
 
     print(f"Updating route table {route_table['route_table_id']} with next hop address {route_table['next_hop']}. New route table: {route_table['routes']}")
     try:
-        r = requests.patch('https://vpc.api.cloud.yandex.net/vpc/v1/routeTables/%s' % route_table['route_table_id'], json={"updateMask": "staticRoutes", "staticRoutes": route_table['routes'] } ,headers={'Authorization': 'Bearer %s'  % iam_token})
+        r = requests.patch('https://vpc.api.cloud.yandex.net/vpc/v1/routeTables/%s' % route_table['route_table_id'], json={"updateMask": "staticRoutes", "staticRoutes": route_table['routes'] }, headers=get_headers())
     except Exception as e:
         print(f"Request to update route table {route_table['route_table_id']} failed due to: {e}. Retrying in {cron_interval} minutes...")
         # add custom metric 'route_switcher.table_changed' into metric list for Yandex Monitoring that error happened during table change
@@ -307,8 +342,12 @@ def handler(event, context):
 
     global iam_token 
     iam_token = context.token['access_token']
-    global folder_id
-    folder_id = event['event_metadata']['folder_id']
+
+    folder_id_from_metadata = (event or {}).get('event_metadata', {}).get('folder_id')
+    if folder_id_from_metadata:
+        global folder_id
+        folder_id = folder_id_from_metadata
+
     global metrics
 
     # get route tables from VPC
@@ -353,7 +392,7 @@ def handler(event, context):
                 put_config(config)
                 break
 
-        # get router status from NLB
+        # get router status from load balancer
         routerStatus = get_router_status(config)
         if routerStatus is None:
             # exit from function as some errors happened when checking router status
