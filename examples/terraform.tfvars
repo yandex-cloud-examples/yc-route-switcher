@@ -8,7 +8,9 @@ vpc_name = "demo"
 trusted_ip_for_mgmt = ["A.A.A.A/32", "B.B.B.0/24"]
 
 // username for VMs
-vm_username = "admin"
+# Here you must specify the username that will be granted root privileges for working in the serial console. 
+# Be careful — you must not use "root" or "admin" as the username, as this will cause validation errors and prevent proper execution of cloud-init.
+vm_username = "devops"
 
 // private subnets
 private_subnet_a_name = "private-a"
