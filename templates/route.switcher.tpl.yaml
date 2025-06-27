@@ -9,11 +9,15 @@ ${yamlencode({
   ]
   routers = [
     for router in routers : {
-      "healthchecked_ip" = (router.healthchecked_ip) 
+      "vm_id" = (router.vm_id)
+      "healthchecked_ip" = (router.healthchecked_ip)
+      "primary" = (router.primary) 
       "interfaces" = [
         for int in router.interfaces : {
+          "index" = (int.index)
           "own_ip" = (int.own_ip) 
           "backup_peer_ip" = (int.backup_peer_ip)
+          "security_group_ids" = (int.security_group_ids)
         }
       ]
     }

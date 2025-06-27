@@ -8,7 +8,7 @@ vpc_name = "demo"
 trusted_ip_for_mgmt = ["A.A.A.A/32", "B.B.B.0/24"]
 
 // username for VMs
-vm_username = "admin"
+vm_username = "vm-admin"
 
 // private subnets
 private_subnet_a_name = "private-a"

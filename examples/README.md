@@ -103,7 +103,7 @@
     | `folder_id` | Идентификатор вашего каталога в Yandex Cloud для размещения ресурсов | `"b1genmlel3ax7ux47jko"` |
     | `vpc_name` | Название создаваемой сети VPC для размещения ресурсов | `"demo"` |
     | `trusted_ip_for_mgmt` | Список публичных IP-адресов/подсетей, с которых разрешено подключение к NAT-инстансам. Используется во входящем правиле группы безопасности для  NAT-инстансов.  | `["A.A.A.A/32", "B.B.B.0/24"]` |
-    | `vm_username` | Имя пользователя для NAT-инстансов и тестовой ВМ | `"admin"` |
+    | `vm_username` | Имя пользователя для NAT-инстансов и тестовой ВМ | `"vm-admin"` |
     | `private_subnet_a_name` | Название подсети в зоне `ru-central1-a` для размещения ресурсов, которым требуется доступ в интернет. В этой подсети будет развернута тестовая ВМ. | `"private-a"` |
     | `private_subnet_a_cidr` | IP-адрес и маска для подсети `private_subnet_a_name` с тестовой ВМ | `"10.160.1.0/24"` |
     | `public_subnet_a_name` | Название подсети в зоне `ru-central1-a` для размещения NAT-инстанса NAT-A | `"public-a"` |
@@ -143,7 +143,7 @@
     | `nat-a_public_ip_address` | Публичный IP-адрес NAT-A | `"A.A.A.A"` |
     | `nat-b_public_ip_address` | Публичный IP-адрес NAT-B | `"B.B.B.B"` |
     | `path_for_private_ssh_key` | Файл с private ключом для подключения по протоколу SSH к NAT-инстансам NAT-A и NAT-B | `"./pt_key.pem"` |
-    | `vm_username` | Имя пользователя для NAT-инстансов и тестовой ВМ | `"admin"` |
+    | `vm_username` | Имя пользователя для NAT-инстансов и тестовой ВМ | `"vm-admin"` |
     | `test_vm_password` | Пароль пользователя `vm_username` для тестовой ВМ | `"F>HvL+vifr0d"` | 
     
     </details>
