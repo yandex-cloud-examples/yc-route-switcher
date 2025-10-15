@@ -6,7 +6,7 @@ resource "yandex_iam_service_account" "route_switcher_sa" {
 resource "yandex_lb_target_group" "route_switcher_tg" {
   folder_id = var.folder_id
   name      = "route-switcher-tg-${random_string.prefix.result}"
-  region_id = "ru-central1"
+  region_id = var.region_id
 
   dynamic "target" {
     for_each = var.routers == null ? [] : var.routers

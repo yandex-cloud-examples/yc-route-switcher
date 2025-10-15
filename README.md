@@ -132,6 +132,7 @@ Public интерфейсу VM-B назначена одна группа без
 | `routers` | Список конфигураций сетевых ВМ. Смотрите [параметры routers](#параметр-routers). | `list(object)` | `[]` | да |
 | `router_healthcheck_interval` | Интервал в секундах между последовательными проверками состояния сетевых ВМ во время работы облачной функции route-switcher. Значение интервала может быть не менее 10 с. Если меняется значение по умолчанию, то рекомендуется дополнительно провести тестирование сценариев отказоустойчивости.  | `number` | `60` | нет |
 | `security_group_folder_list` | Список ID каталогов, в которых размещены группы безопасности в [параметре interfaces](#параметр-interfaces) | `list(string)` | `[]` | да, для переключения групп безопасности |
+| `region_id` | ID региона Yandex Cloud, где будет развернута инфраструктура модуля route-switcher | `string` | `"ru-central1"` | нет |
 
 ### Параметры `routers`
 
@@ -167,6 +168,7 @@ module "route_switcher" {
   source    = "./modules/route-switcher/"
   start_module          = false
   folder_id = "b1g0000000000000mgmt" 
+  region_id = "ru-central1"
   route_table_folder_list = ["b1g00000000000000dmz"]
   route_table_list      = ["enp000000000000dmzrt"] 
   router_healthcheck_port = 22
@@ -205,6 +207,7 @@ module "route_switcher" {
   source    = "./modules/route-switcher/"
   start_module          = false
   folder_id = var.folder_id
+  region_id = var.region_id
   route_table_folder_list = [yandex_resourcemanager_folder.dmz.id]
   route_table_list      = [yandex_vpc_route_table.dmz-rt.id]
   router_healthcheck_port = 22
@@ -247,6 +250,7 @@ module "route_switcher" {
   source    = "./modules/route-switcher/"
   start_module          = false
   folder_id = "b1g00000000000000dmz" 
+  region_id = "ru-central1"
   route_table_folder_list = ["b1g00000000000000dmz"]
   route_table_list      = ["enp000000000000dmzrt"]
   security_group_folder_list = ["b1g00000000000000pub"] 

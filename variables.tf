@@ -75,3 +75,9 @@ variable "security_group_folder_list" {
   type        = list(string)
   default = []
 }
+
+variable "region_id" {
+  description = "Yandex Cloud region ID where the route switcher infrastructure will be deployed"
+  type        = string
+  default     = "ru-central1"
+}

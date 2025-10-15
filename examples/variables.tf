@@ -53,3 +53,9 @@ variable "public_subnet_b_cidr" {
    type = string
    default = null
 }
+
+// Yandex Cloud region ID
+variable "region_id" {
+  type = string
+  default = "ru-central1"
+}

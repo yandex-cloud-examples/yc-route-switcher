@@ -2,6 +2,7 @@ module "route_switcher" {
   source    = "../"
   start_module          = false
   folder_id = var.folder_id
+  region_id = var.region_id
   route_table_folder_list = [var.folder_id]
   route_table_list      = [yandex_vpc_route_table.nat_instance_rt.id]
   router_healthcheck_port = 22
